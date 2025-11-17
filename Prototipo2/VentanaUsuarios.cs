@@ -7,11 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SQLite;
+using MySql.Data.MySqlClient;
 using System.Globalization;
 using System.Configuration;
 using Prototipo2.Logging;
-using Prototipo2.Data;
 
 namespace Prototipo2
 {
@@ -22,8 +21,8 @@ namespace Prototipo2
 
         private static string GetConnStr()
         {
-            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
-            return cs != null ? cs.ConnectionString : SqliteHelper.ConnectionString;
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"]; 
+            return cs != null ? cs.ConnectionString : "server=127.0.0.1;port=3307;database=prototipo2_db;uid=appuser;pwd=apppass123;";
         }
 
         private class UsuarioRow
@@ -92,16 +91,16 @@ namespace Prototipo2
                 }
             }
 
-            SQLiteConnection connection = null;
-            SQLiteCommand cmd = null;
-            SQLiteDataReader reader = null;
+            MySqlConnection connection = null;
+            MySqlCommand cmd = null;
+            MySqlDataReader reader = null;
             var lista = new List<UsuarioRow>();
 
             try
             {
-                connection = new SQLiteConnection(connectionString);
+                connection = new MySqlConnection(connectionString);
                 connection.Open();
-                cmd = new SQLiteCommand(query, connection);
+                cmd = new MySqlCommand(query, connection);
                 if (!string.IsNullOrEmpty(termino))
                 {
                     cmd.Parameters.AddWithValue("@termino", termino);
@@ -111,9 +110,9 @@ namespace Prototipo2
                 while (reader.Read())
                 {
                     var row = new UsuarioRow();
-                    row.Id = Convert.ToInt32(reader["id"]);
+                    row.Id = reader.GetInt32("id");
                     row.Usuario = reader["Usuario"].ToString();
-                    row.EsAdmin = Convert.ToInt32(reader["EsAdmin"]) != 0;
+                    row.EsAdmin = reader.GetBoolean("EsAdmin");
 
                     lista.Add(row);
                 }
@@ -189,21 +188,21 @@ namespace Prototipo2
             string claveParaGuardar = PasswordHelper.HashPassword(TxtClave.Text);
 
             string connectionString = GetConnStr();
-            SQLiteConnection connection = null;
-            SQLiteCommand cmd = null;
+            MySqlConnection connection = null;
+            MySqlCommand cmd = null;
 
             try
             {
                 ShowProgress(true);
                 await Task.Run(() =>
                 {
-                    connection = new SQLiteConnection(connectionString);
+                    connection = new MySqlConnection(connectionString);
                     connection.Open();
                     string query = "INSERT INTO usuarios (Usuario, Clave, EsAdmin) VALUES (@usuario, @clave, @esAdmin)";
-                    cmd = new SQLiteCommand(query, connection);
+                    cmd = new MySqlCommand(query, connection);
                     cmd.Parameters.AddWithValue("@usuario", TxtUsuario.Text.Trim());
                     cmd.Parameters.AddWithValue("@clave", claveParaGuardar);
-                    cmd.Parameters.AddWithValue("@esAdmin", ChkAdmin.Checked ? 1 : 0);
+                    cmd.Parameters.AddWithValue("@esAdmin", ChkAdmin.Checked);
                     cmd.ExecuteNonQuery();
                 });
                 SimpleLogger.Info($"Usuario creado: {TxtUsuario.Text.Trim()}");
@@ -221,7 +220,7 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == ConnectionState.Open) connection.Close();
+                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
                 ShowProgress(false);
@@ -239,19 +238,19 @@ namespace Prototipo2
             }
 
             string connectionString = GetConnStr();
-            SQLiteConnection connection = null;
-            SQLiteCommand cmd = null;
+            MySqlConnection connection = null;
+            MySqlCommand cmd = null;
 
             try
             {
                 ShowProgress(true);
                 await Task.Run(() =>
                 {
-                    connection = new SQLiteConnection(connectionString);
+                    connection = new MySqlConnection(connectionString);
                     connection.Open();
 
                     string query = "";
-                    cmd = new SQLiteCommand();
+                    cmd = new MySqlCommand();
                     cmd.Connection = connection;
 
                     if (!string.IsNullOrEmpty(TxtClave.Text))
@@ -267,7 +266,7 @@ namespace Prototipo2
 
                     cmd.CommandText = query;
                     cmd.Parameters.AddWithValue("@usuario", TxtUsuario.Text.Trim());
-                    cmd.Parameters.AddWithValue("@esAdmin", ChkAdmin.Checked ? 1 : 0);
+                    cmd.Parameters.AddWithValue("@esAdmin", ChkAdmin.Checked);
                     cmd.Parameters.AddWithValue("@id", this.idModificar);
 
                     cmd.ExecuteNonQuery();
@@ -288,7 +287,7 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == ConnectionState.Open) connection.Close();
+                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
                 ShowProgress(false);
@@ -303,18 +302,18 @@ namespace Prototipo2
             if (res == DialogResult.No) return;
 
             string connectionString = GetConnStr();
-            SQLiteConnection connection = null;
-            SQLiteCommand cmd = null;
+            MySqlConnection connection = null;
+            MySqlCommand cmd = null;
 
             try
             {
                 ShowProgress(true);
                 await Task.Run(() =>
                 {
-                    connection = new SQLiteConnection(connectionString);
+                    connection = new MySqlConnection(connectionString);
                     connection.Open();
                     string query = "DELETE FROM usuarios WHERE id = @id";
-                    cmd = new SQLiteCommand(query, connection);
+                    cmd = new MySqlCommand(query, connection);
                     cmd.Parameters.AddWithValue("@id", this.idModificar);
                     cmd.ExecuteNonQuery();
                 });
@@ -334,7 +333,7 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == ConnectionState.Open) connection.Close();
+                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
                 ShowProgress(false);
@@ -386,16 +385,16 @@ namespace Prototipo2
         private void CargarDatosDeUsuario(int idUsuario)
         {
             string connectionString = GetConnStr();
-            SQLiteConnection connection = null;
-            SQLiteCommand cmd = null;
-            SQLiteDataReader reader = null;
+            MySqlConnection connection = null;
+            MySqlCommand cmd = null;
+            MySqlDataReader reader = null;
 
             try
             {
-                connection = new SQLiteConnection(connectionString);
+                connection = new MySqlConnection(connectionString);
                 connection.Open();
                 string query = "SELECT Usuario, EsAdmin FROM usuarios WHERE id = @id";
-                cmd = new SQLiteCommand(query, connection);
+                cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@id", idUsuario);
                 reader = cmd.ExecuteReader();
                 if (reader.Read())
@@ -419,7 +418,7 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == ConnectionState.Open) connection.Close();
+                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
             }

@@ -1,6 +1,6 @@
 using System;
 using System.Configuration;
-using System.Data.SQLite;
+using MySql.Data.MySqlClient;
 
 namespace Prototipo2.Data
 {
@@ -10,23 +10,24 @@ namespace Prototipo2.Data
 
         static DbHelper()
         {
-            _connStr = SqliteHelper.ConnectionString;
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
+            _connStr = cs != null ? cs.ConnectionString : "server=127.0.0.1;port=3307;database=prototipo2_db;uid=appuser;pwd=apppass123;";
         }
 
         public static string ConnectionString => _connStr;
 
-        public static SQLiteConnection OpenConnection()
+        public static MySqlConnection OpenConnection()
         {
-            var cn = new SQLiteConnection(_connStr);
+            var cn = new MySqlConnection(_connStr);
             cn.Open();
             return cn;
         }
 
         // Execute a set of DB operations inside a transaction. Commits on success, rolls back on exception.
-        public static void ExecuteInTransaction(Action<SQLiteConnection, SQLiteTransaction> action)
+        public static void ExecuteInTransaction(Action<MySqlConnection, MySqlTransaction> action)
         {
-            SQLiteConnection cn = null;
-            SQLiteTransaction tx = null;
+            MySqlConnection cn = null;
+            MySqlTransaction tx = null;
             try
             {
                 cn = OpenConnection();

@@ -7,11 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SQLite;
+using MySql.Data.MySqlClient;
 using System.Security.Cryptography;
 using System.Configuration;
 using Prototipo2.Logging;
-using Prototipo2.Data;
 
 namespace Prototipo2
 {
@@ -29,43 +28,53 @@ namespace Prototipo2
 
         private static string GetConnStr()
         {
-            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
-            return cs != null ? cs.ConnectionString : SqliteHelper.ConnectionString;
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"]; 
+            return cs != null ? cs.ConnectionString : "server=127.0.0.1;port=3307;database=prototipo2_db;uid=appuser;pwd=apppass123;";
         }
 
         private void VentanaInicio_Load(object sender, EventArgs e)
         {
-            SQLiteConnection conn = null;
-            SQLiteCommand cmd = null;
+            // Asegurar que exista un usuario por defecto "Administrador" con clave "Admin1".
+            MySqlConnection conn = null;
+            MySqlCommand cmd = null;
+            MySqlCommand ins = null;
             try
             {
                 string connectionString = GetConnStr();
-                conn = new SQLiteConnection(connectionString);
+                conn = new MySqlConnection(connectionString);
                 conn.Open();
 
-                cmd = new SQLiteCommand("SELECT COUNT(1) FROM usuarios WHERE Usuario = @u", conn);
+                cmd = new MySqlCommand("SELECT id, Clave FROM usuarios WHERE Usuario = @u", conn);
                 cmd.Parameters.AddWithValue("@u", "Administrador");
-                object cres = cmd.ExecuteScalar();
-                int count = 0;
-                bool needInsert = !(cres != null && int.TryParse(cres.ToString(), out count) && count > 0);
+                var res = cmd.ExecuteScalar();
+                bool needInsert = false;
+
+                using (var chk = new MySqlCommand("SELECT COUNT(1) FROM usuarios WHERE Usuario = @u", conn))
+                {
+                    chk.Parameters.AddWithValue("@u", "Administrador");
+                    object cres = chk.ExecuteScalar();
+                    int count = 0;
+                    if (!(cres != null && int.TryParse(cres.ToString(), out count) && count > 0))
+                    {
+                        needInsert = true;
+                    }
+                }
 
                 if (needInsert)
                 {
                     string hashed = PasswordHelper.HashPassword("Admin1");
-                    using (var ins = new SQLiteCommand("INSERT INTO usuarios (Usuario, Clave, EsAdmin) VALUES (@u, @c, @e)", conn))
+                    ins = new MySqlCommand("INSERT INTO usuarios (Usuario, Clave, EsAdmin) VALUES (@u, @c, @e)", conn);
+                    ins.Parameters.AddWithValue("@u", "Administrador");
+                    ins.Parameters.AddWithValue("@c", hashed);
+                    ins.Parameters.AddWithValue("@e", true);
+                    try
                     {
-                        ins.Parameters.AddWithValue("@u", "Administrador");
-                        ins.Parameters.AddWithValue("@c", hashed);
-                        ins.Parameters.AddWithValue("@e", 1);
-                        try
-                        {
-                            ins.ExecuteNonQuery();
-                            SimpleLogger.Info("Usuario Administrador creado por defecto.");
-                        }
-                        catch (SQLiteException)
-                        {
-                            // Silenciar si la tabla no existe
-                        }
+                        ins.ExecuteNonQuery();
+                        SimpleLogger.Info("Usuario Administrador creado por defecto.");
+                    }
+                    catch (MySqlException)
+                    {
+                        // Silenciar si la tabla no existe
                     }
                 }
             }
@@ -75,10 +84,11 @@ namespace Prototipo2
             }
             finally
             {
+                if (ins != null) ins.Dispose();
                 if (cmd != null) cmd.Dispose();
                 if (conn != null)
                 {
-                    if (conn.State == ConnectionState.Open) conn.Close();
+                    if (conn.State == System.Data.ConnectionState.Open) conn.Close();
                     conn.Dispose();
                 }
             }
@@ -89,26 +99,27 @@ namespace Prototipo2
             string UsuarioIng = TxtUsuario.Text, ClaveIng = TxtClave.Text;
 
             string connectionString = GetConnStr();
-            SQLiteConnection connection = new SQLiteConnection(connectionString);
-            SQLiteCommand cmd = null;
-            SQLiteDataReader reader = null;
+            MySqlConnection connection = new MySqlConnection(connectionString);
+            MySqlCommand cmd = null;
+            MySqlDataReader reader = null;
 
             try
             {
                 connection.Open();
 
                 string query = "SELECT ID, Clave, EsAdmin FROM usuarios WHERE Usuario = @Usuario";
-                cmd = new SQLiteCommand(query, connection);
+                cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@Usuario", UsuarioIng);
 
                 reader = cmd.ExecuteReader();
 
                 if (reader.Read())
                 {
-                    int id = Convert.ToInt32(reader["ID"]);
-                    string claveGuardada = reader["Clave"].ToString();
-                    bool esAdminGuardado = Convert.ToInt32(reader["EsAdmin"]) != 0;
+                    int id = reader.GetInt32("ID");
+                    string claveGuardada = reader.GetString("Clave");
+                    bool esAdminGuardado = reader.GetBoolean("EsAdmin");
 
+                    // Si la contraseña almacenada está en formato hash salt$hash
                     if (PasswordHelper.VerifyPassword(ClaveIng, claveGuardada))
                     {
                         this.EsAdmin = esAdminGuardado;
@@ -119,14 +130,16 @@ namespace Prototipo2
                         return;
                     }
 
+                    // Si no coincide el hash pero la contraseña almacenada coincide en texto plano, migramos
                     if (string.Equals(claveGuardada, ClaveIng, StringComparison.Ordinal))
                     {
+                        // cerrar reader para ejecutar UPDATE
                         reader.Close();
                         reader.Dispose();
                         reader = null;
 
                         string nuevoHash = PasswordHelper.HashPassword(ClaveIng);
-                        using (var upd = new SQLiteCommand("UPDATE usuarios SET Clave = @c WHERE ID = @id", connection))
+                        using (var upd = new MySqlCommand("UPDATE usuarios SET Clave = @c WHERE ID = @id", connection))
                         {
                             upd.Parameters.AddWithValue("@c", nuevoHash);
                             upd.Parameters.AddWithValue("@id", id);
@@ -142,6 +155,7 @@ namespace Prototipo2
                         return;
                     }
 
+                    // no coincide
                     SimpleLogger.Error($"Intento de login fallido para usuario '{UsuarioIng}'. Contraseña inválida.");
                     MessageBox.Show("Contraseña invalida");
                     ManejarIntentoFallido();
@@ -153,7 +167,7 @@ namespace Prototipo2
                     ManejarIntentoFallido();
                 }
             }
-            catch (SQLiteException ex)
+            catch (MySqlException ex)
             {
                 SimpleLogger.Error("No se pudo conectar a la base de datos: " + ex.Message);
                 MessageBox.Show("No se pudo conectar a la base de datos: " + ex.Message);
@@ -166,7 +180,7 @@ namespace Prototipo2
                     reader.Dispose();
                 }
                 if (cmd != null) cmd.Dispose();
-                if (connection.State == ConnectionState.Open)
+                if (connection.State == System.Data.ConnectionState.Open)
                 {
                     connection.Close();
                 }

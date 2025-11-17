@@ -96,7 +96,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\DbHelper.cs" />
-    <Compile Include="Data\SqliteHelper.cs" />
     <Compile Include="Logging\SimpleLogger.cs" />
     <Compile Include="PasswordHelper.cs" />
     <Compile Include="VentanaInicio.cs">

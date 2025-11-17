@@ -1,7 +1,7 @@
 using System;
 using System.Data;
 using System.Windows.Forms;
-using System.Data.SQLite;
+using MySql.Data.MySqlClient;
 using System.Configuration;
 using Prototipo2.Data;
 using Prototipo2.Logging;
@@ -14,7 +14,7 @@ namespace Prototipo2
         private static string GetConnStr()
         {
             var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
-            return cs != null ? cs.ConnectionString : "Data Source=prototipo2.db;Version=3;";
+            return cs != null ? cs.ConnectionString : "server=127.0.0.1;port=3307;database=prototipo2_db;uid=appuser;pwd=apppass123;";
         }
 
         private TextBox txtDocSocio;
@@ -139,7 +139,7 @@ namespace Prototipo2
                     DbHelper.ExecuteInTransaction((cn, tx) =>
                     {
                         int socioId = 0;
-                        using (var cmd = new SQLiteCommand("SELECT id FROM socios WHERE documento=@d AND estado='ACTIVO'", cn, tx))
+                        using (var cmd = new MySqlCommand("SELECT id FROM socios WHERE documento=@d AND estado='ACTIVO'", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@d", doc);
                             var r = cmd.ExecuteScalar();
@@ -148,7 +148,7 @@ namespace Prototipo2
                         if (socioId == 0) throw new Exception("Socio no encontrado o inactivo.");
 
                         int ejemplarId = 0;
-                        using (var cmd = new SQLiteCommand("SELECT id FROM ejemplares WHERE codigo_barra=@c AND estado='DISPONIBLE'", cn, tx))
+                        using (var cmd = new MySqlCommand("SELECT id FROM ejemplares WHERE codigo_barra=@c AND estado='DISPONIBLE'", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@c", codigo);
                             var r = cmd.ExecuteScalar();
@@ -156,7 +156,7 @@ namespace Prototipo2
                         }
                         if (ejemplarId == 0) throw new Exception("Ejemplar no disponible.");
 
-                        using (var cmd = new SQLiteCommand("INSERT INTO prestamos (socio_id, ejemplar_id, fecha_prestamo, fecha_vencimiento, estado) VALUES (@s,@e,datetime('now'),@v,'ACTIVO')", cn, tx))
+                        using (var cmd = new MySqlCommand("INSERT INTO prestamos (socio_id, ejemplar_id, fecha_prestamo, fecha_vencimiento, estado) VALUES (@s,@e,NOW(),@v,'ACTIVO')", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@s", socioId);
                             cmd.Parameters.AddWithValue("@e", ejemplarId);
@@ -164,13 +164,13 @@ namespace Prototipo2
                             cmd.ExecuteNonQuery();
                         }
 
-                        using (var cmd = new SQLiteCommand("UPDATE ejemplares SET estado='PRESTADO' WHERE id=@e", cn, tx))
+                        using (var cmd = new MySqlCommand("UPDATE ejemplares SET estado='PRESTADO' WHERE id=@e", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@e", ejemplarId);
                             cmd.ExecuteNonQuery();
                         }
 
-                        using (var cmd = new SQLiteCommand("INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, fecha, detalle) VALUES (@u,'PRESTAR','PRESTAMO',NULL,datetime('now'),@d)", cn, tx))
+                        using (var cmd = new MySqlCommand("INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, fecha, detalle) VALUES (@u,'PRESTAR','PRESTAMO',NULL,NOW(),@d)", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@u", DBNull.Value);
                             cmd.Parameters.AddWithValue("@d", $"Socio:{socioId};Ejemplar:{ejemplarId}");
@@ -206,7 +206,7 @@ namespace Prototipo2
                     DbHelper.ExecuteInTransaction((cn, tx) =>
                     {
                         int ejemplarId = 0;
-                        using (var cmd = new SQLiteCommand("SELECT id FROM ejemplares WHERE codigo_barra=@c", cn, tx))
+                        using (var cmd = new MySqlCommand("SELECT id FROM ejemplares WHERE codigo_barra=@c", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@c", codigo);
                             var r = cmd.ExecuteScalar();
@@ -214,19 +214,19 @@ namespace Prototipo2
                         }
                         if (ejemplarId == 0) throw new Exception("Ejemplar no existe");
 
-                        using (var cmd = new SQLiteCommand("UPDATE prestamos SET fecha_devolucion=datetime('now'), estado='DEVUELTO' WHERE ejemplar_id=@e AND estado='ACTIVO'", cn, tx))
+                        using (var cmd = new MySqlCommand("UPDATE prestamos SET fecha_devolucion=NOW(), estado='DEVUELTO' WHERE ejemplar_id=@e AND estado='ACTIVO'", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@e", ejemplarId);
                             cmd.ExecuteNonQuery();
                         }
 
-                        using (var cmd = new SQLiteCommand("UPDATE ejemplares SET estado='DISPONIBLE' WHERE id=@e", cn, tx))
+                        using (var cmd = new MySqlCommand("UPDATE ejemplares SET estado='DISPONIBLE' WHERE id=@e", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@e", ejemplarId);
                             cmd.ExecuteNonQuery();
                         }
 
-                        using (var cmd = new SQLiteCommand("INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, fecha, detalle) VALUES (@u,'DEVOLVER','PRESTAMO',NULL,datetime('now'),@d)", cn, tx))
+                        using (var cmd = new MySqlCommand("INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, fecha, detalle) VALUES (@u,'DEVOLVER','PRESTAMO',NULL,NOW(),@d)", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@u", DBNull.Value);
                             cmd.Parameters.AddWithValue("@d", $"Ejemplar:{ejemplarId}");
