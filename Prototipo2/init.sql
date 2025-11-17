@@ -1,0 +1,53 @@
+CREATE DATABASE IF NOT EXISTS `prototipo2_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `prototipo2_db`;
+
+CREATE TABLE IF NOT EXISTS `usuarios` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `Usuario` VARCHAR(100) NOT NULL UNIQUE,
+  `Clave` VARCHAR(255) NOT NULL,
+  `EsAdmin` TINYINT(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `libros` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `Titulo` VARCHAR(200) NOT NULL,
+  `Autor` VARCHAR(150) NOT NULL,
+  `Categoria` VARCHAR(100) NOT NULL,
+  `ISBN` VARCHAR(50) NOT NULL UNIQUE,
+  `Stock` INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `prestamos` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `UsuarioId` INT NOT NULL,
+  `LibroId` INT NOT NULL,
+  `FechaInicio` DATETIME NOT NULL,
+  `FechaLimite` DATETIME NOT NULL,
+  `FechaDevolucion` DATETIME NULL,
+  FOREIGN KEY (UsuarioId) REFERENCES usuarios(id),
+  FOREIGN KEY (LibroId) REFERENCES libros(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `multas` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `PrestamoId` INT NOT NULL UNIQUE,
+  `Monto` DECIMAL(10,2) NOT NULL,
+  `Pagada` TINYINT(1) NOT NULL DEFAULT 0,
+  FOREIGN KEY (PrestamoId) REFERENCES prestamos(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO usuarios (Usuario, Clave, EsAdmin) VALUES ('admin', 'admin', 1);
+
+-- Inserta 50 libros de ejemplo (MySQL 8+)
+WITH RECURSIVE seq AS (
+  SELECT 1 AS n
+  UNION ALL
+  SELECT n+1 FROM seq WHERE n < 50
+)
+INSERT INTO libros (Titulo, Autor, Categoria, ISBN, Stock)
+SELECT CONCAT('Libro ', n),
+       CONCAT('Autor ', n),
+       'General',
+       CONCAT('ISBN', LPAD(n,4,'0')),
+       (n % 5) + 1
+FROM seq;
