@@ -7,7 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
+using System.Configuration;
+using System.Data.SQLite;
 
 namespace Prototipo2
 {
@@ -16,6 +17,12 @@ namespace Prototipo2
         public VentanaBuscar()
         {
             InitializeComponent();
+        }
+
+        private static string GetConnStr()
+        {
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
+            return cs != null ? cs.ConnectionString : "Data Source=prototipo2.db;Version=3;";
         }
 
         private void BtnSalir_Click(object sender, EventArgs e)
@@ -48,21 +55,19 @@ namespace Prototipo2
             }
 
             // 2. Definir la consulta base y el valor del parámetro
-            string query = "";
-            string parametroValor = "";
+            string consulta = "";
+            string valorParametro = "";
 
             // 3. Lógica para decidir la consulta
             if (RdbExacta.Checked)
             {
-                query = "SELECT nombre, autor, precio, fecha_publicacion, stock FROM libros " +
-                        "WHERE nombre = @termino OR autor = @termino";
-                parametroValor = termino;
+                consulta = "SELECT nombre, autor, precio, fecha_publicacion, stock FROM libros WHERE nombre = @termino OR autor = @termino";
+                valorParametro = termino;
             }
             else if (RdbAproximada.Checked)
             {
-                query = "SELECT nombre, autor, precio, fecha_publicacion, stock FROM libros " +
-                        "WHERE nombre LIKE @termino OR autor LIKE @termino";
-                parametroValor = "%" + termino + "%";
+                consulta = "SELECT nombre, autor, precio, fecha_publicacion, stock FROM libros WHERE nombre LIKE @termino OR autor LIKE @termino";
+                valorParametro = "%" + termino + "%";
             }
             else
             {
@@ -73,38 +78,43 @@ namespace Prototipo2
             LvRegistros.Items.Clear();
             int totalRegistros = 0;
 
-            string connectionString = "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
+            string cadenaConexion = GetConnStr();
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                using (SQLiteConnection conexion = new SQLiteConnection(cadenaConexion))
                 {
-                    connection.Open();
-                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    conexion.Open();
+                    using (SQLiteCommand comando = new SQLiteCommand(consulta, conexion))
                     {
-                        cmd.Parameters.AddWithValue("@termino", parametroValor);
+                        comando.Parameters.AddWithValue("@termino", valorParametro);
 
-                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        using (SQLiteDataReader lector = comando.ExecuteReader())
                         {
-                            while (reader.Read())
+                            while (lector.Read())
                             {
-                                ListViewItem item = new ListViewItem(reader["nombre"].ToString());
+                                ListViewItem elemento = new ListViewItem(lector["nombre"].ToString());
 
-                                item.SubItems.Add(reader["autor"].ToString());
-                                item.SubItems.Add(reader["precio"].ToString());
+                                elemento.SubItems.Add(lector["autor"].ToString());
+                                elemento.SubItems.Add(lector["precio"].ToString());
 
-                                DateTime fecha = reader.GetDateTime("fecha_publicacion");
-                                item.SubItems.Add(fecha.ToString("yyyy-MM-dd"));
+                                object fechaObj = lector["fecha_publicacion"];
+                                string fechaStr = "";
+                                if (fechaObj != null && fechaObj != DBNull.Value)
+                                {
+                                    try { fechaStr = Convert.ToDateTime(fechaObj).ToString("yyyy-MM-dd"); } catch { fechaStr = fechaObj.ToString(); }
+                                }
+                                elemento.SubItems.Add(fechaStr);
 
-                                item.SubItems.Add(reader["stock"].ToString());
+                                elemento.SubItems.Add(lector["stock"].ToString());
 
-                                LvRegistros.Items.Add(item);
+                                LvRegistros.Items.Add(elemento);
 
                                 totalRegistros++;
                             }
                         }
                     }
-                } 
+                }
 
                 LblCuenta.Text = "TOTAL DE REGISTROS: " + totalRegistros;
             }
@@ -112,6 +122,11 @@ namespace Prototipo2
             {
                 MessageBox.Show("Error al consultar la base de datos: " + ex.Message);
             }
+        }
+
+        private void LvRegistros_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

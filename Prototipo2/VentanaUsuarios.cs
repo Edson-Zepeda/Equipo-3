@@ -7,22 +7,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
 using System.Globalization;
 using System.Configuration;
-using Prototipo2.Logging;
+using System.Data.SQLite;
 
 namespace Prototipo2
 {
     public partial class VentanaUsuarios : Form
     {
         private int idModificar;
-        private ProgressBar _progress;
+        private ProgressBar progressBar;
 
         private static string GetConnStr()
         {
-            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"]; 
-            return cs != null ? cs.ConnectionString : "server=127.0.0.1;port=3307;database=prototipo2_db;uid=appuser;pwd=apppass123;";
+            System.Configuration.ConnectionStringSettings cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
+            if (cs != null)
+            {
+                return cs.ConnectionString;
+            }
+            else
+            {
+                return "Data Source=prototipo2.db;Version=3;";
+            }
         }
 
         private class UsuarioRow
@@ -47,13 +53,13 @@ namespace Prototipo2
             LvRegistros.Columns.Add("Usuario", 200);
             LvRegistros.Columns.Add("Es Admin", 100);
 
-            _progress = new ProgressBar();
-            _progress.Style = ProgressBarStyle.Marquee;
-            _progress.MarqueeAnimationSpeed = 30;
-            _progress.Visible = false;
-            _progress.Height = 12;
-            _progress.Dock = DockStyle.Bottom;
-            Controls.Add(_progress);
+            progressBar = new ProgressBar();
+            progressBar.Style = ProgressBarStyle.Marquee;
+            progressBar.MarqueeAnimationSpeed = 30;
+            progressBar.Visible = false;
+            progressBar.Height = 12;
+            progressBar.Dock = DockStyle.Bottom;
+            Controls.Add(progressBar);
 
             await CargarUsuariosAsync();
             ConfigurarEstado("inicio");
@@ -61,11 +67,11 @@ namespace Prototipo2
 
         private void ShowProgress(bool show)
         {
-            if (_progress != null)
-                _progress.Visible = show;
+            if (progressBar != null)
+                progressBar.Visible = show;
             UseWaitCursor = show;
             Cursor.Current = show ? Cursors.WaitCursor : Cursors.Default;
-            foreach (Control c in Controls) c.Enabled = !show || c == _progress;
+            foreach (Control c in Controls) c.Enabled = !show || c == progressBar;
         }
 
         private List<UsuarioRow> ConsultarUsuariosInterno(string termino, bool exacta)
@@ -91,16 +97,16 @@ namespace Prototipo2
                 }
             }
 
-            MySqlConnection connection = null;
-            MySqlCommand cmd = null;
-            MySqlDataReader reader = null;
-            var lista = new List<UsuarioRow>();
+            SQLiteConnection connection = null;
+            SQLiteCommand cmd = null;
+            SQLiteDataReader reader = null;
+            List<UsuarioRow> lista = new List<UsuarioRow>();
 
             try
             {
-                connection = new MySqlConnection(connectionString);
+                connection = new SQLiteConnection(connectionString);
                 connection.Open();
-                cmd = new MySqlCommand(query, connection);
+                cmd = new SQLiteCommand(query, connection);
                 if (!string.IsNullOrEmpty(termino))
                 {
                     cmd.Parameters.AddWithValue("@termino", termino);
@@ -109,10 +115,18 @@ namespace Prototipo2
                 reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    var row = new UsuarioRow();
-                    row.Id = reader.GetInt32("id");
+                    UsuarioRow row = new UsuarioRow();
+                    row.Id = Convert.ToInt32(reader["id"]);
                     row.Usuario = reader["Usuario"].ToString();
-                    row.EsAdmin = reader.GetBoolean("EsAdmin");
+                    int tmpEsAdmin = Convert.ToInt32(reader["EsAdmin"]);
+                    if (tmpEsAdmin != 0)
+                    {
+                        row.EsAdmin = true;
+                    }
+                    else
+                    {
+                        row.EsAdmin = false;
+                    }
 
                     lista.Add(row);
                 }
@@ -129,18 +143,31 @@ namespace Prototipo2
 
         private async Task CargarUsuariosAsync(string termino = null)
         {
-            bool exacta = RdbExacta != null && RdbExacta.Checked;
+            bool exacta = false;
+            if (RdbExacta != null && RdbExacta.Checked)
+            {
+                exacta = true;
+            }
             ShowProgress(true);
             try
             {
-                var datos = await Task.Run(() => ConsultarUsuariosInterno(termino, exacta));
+                List<UsuarioRow> datos = await Task.Run(() => ConsultarUsuariosInterno(termino, exacta));
                 LvRegistros.Items.Clear();
                 int totalRegistros = 0;
-                foreach (var r in datos)
+                foreach (UsuarioRow r in datos)
                 {
                     ListViewItem item = new ListViewItem(r.Id.ToString());
                     item.SubItems.Add(r.Usuario);
-                    item.SubItems.Add(r.EsAdmin ? "Sí" : "No");
+                    string esAdminText;
+                    if (r.EsAdmin)
+                    {
+                        esAdminText = "Sí";
+                    }
+                    else
+                    {
+                        esAdminText = "No";
+                    }
+                    item.SubItems.Add(esAdminText);
                     item.Tag = r.Id;
                     LvRegistros.Items.Add(item);
                     totalRegistros++;
@@ -149,7 +176,6 @@ namespace Prototipo2
             }
             catch (Exception ex)
             {
-                SimpleLogger.Error("Error al cargar usuarios: " + ex.Message);
                 MessageBox.Show("Error al cargar usuarios: " + ex.Message);
             }
             finally
@@ -188,31 +214,38 @@ namespace Prototipo2
             string claveParaGuardar = PasswordHelper.HashPassword(TxtClave.Text);
 
             string connectionString = GetConnStr();
-            MySqlConnection connection = null;
-            MySqlCommand cmd = null;
+            SQLiteConnection connection = null;
+            SQLiteCommand cmd = null;
 
             try
             {
                 ShowProgress(true);
                 await Task.Run(() =>
                 {
-                    connection = new MySqlConnection(connectionString);
+                    connection = new SQLiteConnection(connectionString);
                     connection.Open();
                     string query = "INSERT INTO usuarios (Usuario, Clave, EsAdmin) VALUES (@usuario, @clave, @esAdmin)";
-                    cmd = new MySqlCommand(query, connection);
+                    cmd = new SQLiteCommand(query, connection);
                     cmd.Parameters.AddWithValue("@usuario", TxtUsuario.Text.Trim());
                     cmd.Parameters.AddWithValue("@clave", claveParaGuardar);
-                    cmd.Parameters.AddWithValue("@esAdmin", ChkAdmin.Checked);
+                    int esAdminInt;
+                    if (ChkAdmin.Checked)
+                    {
+                        esAdminInt = 1;
+                    }
+                    else
+                    {
+                        esAdminInt = 0;
+                    }
+                    cmd.Parameters.AddWithValue("@esAdmin", esAdminInt);
                     cmd.ExecuteNonQuery();
                 });
-                SimpleLogger.Info($"Usuario creado: {TxtUsuario.Text.Trim()}");
                 MessageBox.Show("Usuario creado con éxito.");
                 await CargarUsuariosAsync();
                 ConfigurarEstado("inicio");
             }
             catch (Exception ex)
             {
-                SimpleLogger.Error("Error al grabar usuario: " + ex.Message);
                 MessageBox.Show("Error al grabar: " + ex.Message);
             }
             finally
@@ -220,7 +253,7 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
+                    if (connection.State == ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
                 ShowProgress(false);
@@ -238,19 +271,19 @@ namespace Prototipo2
             }
 
             string connectionString = GetConnStr();
-            MySqlConnection connection = null;
-            MySqlCommand cmd = null;
+            SQLiteConnection connection = null;
+            SQLiteCommand cmd = null;
 
             try
             {
                 ShowProgress(true);
                 await Task.Run(() =>
                 {
-                    connection = new MySqlConnection(connectionString);
+                    connection = new SQLiteConnection(connectionString);
                     connection.Open();
 
                     string query = "";
-                    cmd = new MySqlCommand();
+                    cmd = new SQLiteCommand();
                     cmd.Connection = connection;
 
                     if (!string.IsNullOrEmpty(TxtClave.Text))
@@ -266,20 +299,27 @@ namespace Prototipo2
 
                     cmd.CommandText = query;
                     cmd.Parameters.AddWithValue("@usuario", TxtUsuario.Text.Trim());
-                    cmd.Parameters.AddWithValue("@esAdmin", ChkAdmin.Checked);
+                    int esAdminInt;
+                    if (ChkAdmin.Checked)
+                    {
+                        esAdminInt = 1;
+                    }
+                    else
+                    {
+                        esAdminInt = 0;
+                    }
+                    cmd.Parameters.AddWithValue("@esAdmin", esAdminInt);
                     cmd.Parameters.AddWithValue("@id", this.idModificar);
 
                     cmd.ExecuteNonQuery();
                 });
 
-                SimpleLogger.Info($"Usuario actualizado: ID={this.idModificar} ({TxtUsuario.Text.Trim()})");
                 MessageBox.Show("Usuario actualizado con éxito.");
                 await CargarUsuariosAsync();
                 ConfigurarEstado("inicio");
             }
             catch (Exception ex)
             {
-                SimpleLogger.Error("Error al modificar usuario: " + ex.Message);
                 MessageBox.Show("Error al modificar: " + ex.Message);
             }
             finally
@@ -287,7 +327,7 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
+                    if (connection.State == ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
                 ShowProgress(false);
@@ -302,30 +342,28 @@ namespace Prototipo2
             if (res == DialogResult.No) return;
 
             string connectionString = GetConnStr();
-            MySqlConnection connection = null;
-            MySqlCommand cmd = null;
+            SQLiteConnection connection = null;
+            SQLiteCommand cmd = null;
 
             try
             {
                 ShowProgress(true);
                 await Task.Run(() =>
                 {
-                    connection = new MySqlConnection(connectionString);
+                    connection = new SQLiteConnection(connectionString);
                     connection.Open();
                     string query = "DELETE FROM usuarios WHERE id = @id";
-                    cmd = new MySqlCommand(query, connection);
+                    cmd = new SQLiteCommand(query, connection);
                     cmd.Parameters.AddWithValue("@id", this.idModificar);
                     cmd.ExecuteNonQuery();
                 });
 
-                SimpleLogger.Info($"Usuario eliminado: ID={this.idModificar}");
                 MessageBox.Show("Usuario eliminado.");
                 await CargarUsuariosAsync();
                 ConfigurarEstado("inicio");
             }
             catch (Exception ex)
             {
-                SimpleLogger.Error("Error al eliminar usuario: " + ex.Message);
                 MessageBox.Show("Error al eliminar: " + ex.Message);
             }
             finally
@@ -333,7 +371,7 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
+                    if (connection.State == ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
                 ShowProgress(false);
@@ -385,22 +423,30 @@ namespace Prototipo2
         private void CargarDatosDeUsuario(int idUsuario)
         {
             string connectionString = GetConnStr();
-            MySqlConnection connection = null;
-            MySqlCommand cmd = null;
-            MySqlDataReader reader = null;
+            SQLiteConnection connection = null;
+            SQLiteCommand cmd = null;
+            SQLiteDataReader reader = null;
 
             try
             {
-                connection = new MySqlConnection(connectionString);
+                connection = new SQLiteConnection(connectionString);
                 connection.Open();
                 string query = "SELECT Usuario, EsAdmin FROM usuarios WHERE id = @id";
-                cmd = new MySqlCommand(query, connection);
+                cmd = new SQLiteCommand(query, connection);
                 cmd.Parameters.AddWithValue("@id", idUsuario);
                 reader = cmd.ExecuteReader();
                 if (reader.Read())
                 {
                     TxtUsuario.Text = reader["Usuario"].ToString();
-                    ChkAdmin.Checked = reader.GetBoolean("EsAdmin");
+                    int esAdminInt = Convert.ToInt32(reader["EsAdmin"]);
+                    if (esAdminInt != 0)
+                    {
+                        ChkAdmin.Checked = true;
+                    }
+                    else
+                    {
+                        ChkAdmin.Checked = false;
+                    }
                     TxtClave.Text = "";
                 }
             }
@@ -418,13 +464,15 @@ namespace Prototipo2
                 if (cmd != null) cmd.Dispose();
                 if (connection != null)
                 {
-                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
+                    if (connection.State == ConnectionState.Open) connection.Close();
                     connection.Dispose();
                 }
             }
         }
 
+        private void ChkAdmin_CheckedChanged(object sender, EventArgs e)
+        {
 
-
+        }
     }
 }

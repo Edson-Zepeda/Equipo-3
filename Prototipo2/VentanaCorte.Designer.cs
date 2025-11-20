@@ -38,39 +38,36 @@
             // LblHora
             // 
             this.LblHora.AutoSize = true;
-            this.LblHora.Location = new System.Drawing.Point(10, 54);
-            this.LblHora.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.LblHora.Location = new System.Drawing.Point(13, 66);
             this.LblHora.Name = "LblHora";
-            this.LblHora.Size = new System.Drawing.Size(137, 13);
+            this.LblHora.Size = new System.Drawing.Size(174, 16);
             this.LblHora.TabIndex = 9;
             this.LblHora.Text = "Hora: *poner la del sistema*";
             // 
             // LblFecha
             // 
             this.LblFecha.AutoSize = true;
-            this.LblFecha.Location = new System.Drawing.Point(10, 31);
-            this.LblFecha.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.LblFecha.Location = new System.Drawing.Point(13, 38);
             this.LblFecha.Name = "LblFecha";
-            this.LblFecha.Size = new System.Drawing.Size(144, 13);
+            this.LblFecha.Size = new System.Drawing.Size(182, 16);
             this.LblFecha.TabIndex = 8;
             this.LblFecha.Text = "Fecha: *poner la del sistema*";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(256, 2);
-            this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label1.Location = new System.Drawing.Point(341, 2);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(91, 13);
+            this.label1.Size = new System.Drawing.Size(113, 16);
             this.label1.TabIndex = 7;
             this.label1.Text = "CORTE DE CAJA";
             // 
             // BtnCorte
             // 
-            this.BtnCorte.Location = new System.Drawing.Point(10, 327);
-            this.BtnCorte.Margin = new System.Windows.Forms.Padding(2);
+            this.BtnCorte.Location = new System.Drawing.Point(13, 402);
+            this.BtnCorte.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.BtnCorte.Name = "BtnCorte";
-            this.BtnCorte.Size = new System.Drawing.Size(573, 28);
+            this.BtnCorte.Size = new System.Drawing.Size(764, 34);
             this.BtnCorte.TabIndex = 6;
             this.BtnCorte.Text = "CORTE FINAL";
             this.BtnCorte.UseVisualStyleBackColor = true;
@@ -79,25 +76,26 @@
             // LvCorte
             // 
             this.LvCorte.HideSelection = false;
-            this.LvCorte.Location = new System.Drawing.Point(9, 70);
-            this.LvCorte.Margin = new System.Windows.Forms.Padding(2);
+            this.LvCorte.Location = new System.Drawing.Point(12, 86);
+            this.LvCorte.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.LvCorte.Name = "LvCorte";
-            this.LvCorte.Size = new System.Drawing.Size(573, 253);
+            this.LvCorte.Size = new System.Drawing.Size(763, 310);
             this.LvCorte.TabIndex = 5;
             this.LvCorte.UseCompatibleStateImageBehavior = false;
+            this.LvCorte.SelectedIndexChanged += new System.EventHandler(this.LvCorte_SelectedIndexChanged);
             // 
             // VentanaCorte
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(593, 366);
+            this.ClientSize = new System.Drawing.Size(791, 450);
             this.Controls.Add(this.LblHora);
             this.Controls.Add(this.LblFecha);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.BtnCorte);
             this.Controls.Add(this.LvCorte);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.MaximizeBox = false;
             this.Name = "VentanaCorte";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

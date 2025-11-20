@@ -67,6 +67,7 @@
             this.LvRegistros.Size = new System.Drawing.Size(949, 221);
             this.LvRegistros.TabIndex = 11;
             this.LvRegistros.UseCompatibleStateImageBehavior = false;
+            this.LvRegistros.SelectedIndexChanged += new System.EventHandler(this.LvRegistros_SelectedIndexChanged);
             // 
             // BtnBuscar
             // 

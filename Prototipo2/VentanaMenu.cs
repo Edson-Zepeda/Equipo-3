@@ -124,10 +124,8 @@ namespace Prototipo2
 
         private void BtnSocios_Click(object sender, EventArgs e)
         {
-            this.Hide();
-            var frm = new VentanaSocios();
-            frm.ShowDialog();
-            this.Show();
+            // VentanaSocios was removed — show placeholder message
+            MessageBox.Show("La funcionalidad de Socios no está disponible en esta versión.", "No disponible", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void BtnPrestamos_Click(object sender, EventArgs e)

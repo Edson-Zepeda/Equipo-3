@@ -7,8 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
 using System.Configuration;
+using System.Data.SQLite;
 
 namespace Prototipo2
 {
@@ -17,7 +17,7 @@ namespace Prototipo2
         private static string GetConnStr()
         {
             var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
-            return cs != null ? cs.ConnectionString : "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
+            return cs != null ? cs.ConnectionString : "Data Source=prototipo2.db;Version=3;";
         }
         public VentanaEliminar()
         {
@@ -41,18 +41,18 @@ namespace Prototipo2
             string termino = TxtBuscar.Text.Trim();
             if (string.IsNullOrEmpty(termino)) return;
 
-            string query = "";
-            string parametroValor = "";
+            string consulta = "";
+            string valorParametro = "";
 
             if (RdbExacta.Checked)
             {
-                query = "SELECT id, nombre, autor, precio, stock FROM libros " + "WHERE nombre = @termino OR autor = @termino";
-                parametroValor = termino;
+                consulta = "SELECT id, nombre, autor, precio, stock FROM libros WHERE nombre = @termino OR autor = @termino";
+                valorParametro = termino;
             }
             else if (RdbAproximada.Checked)
             {
-                query = "SELECT id, nombre, autor, precio, stock FROM libros " + "WHERE nombre LIKE @termino OR autor LIKE @termino";
-                parametroValor = "%" + termino + "%";
+                consulta = "SELECT id, nombre, autor, precio, stock FROM libros WHERE nombre LIKE @termino OR autor LIKE @termino";
+                valorParametro = "%" + termino + "%";
             }
             else
             {
@@ -62,30 +62,30 @@ namespace Prototipo2
 
             LvRegistros.Items.Clear();
             int totalRegistros = 0;
-            string connectionString = GetConnStr();
+            string cadenaConexion = GetConnStr();
 
-            MySqlConnection connection = null;
-            MySqlCommand cmd = null;
-            MySqlDataReader reader = null;
+            SQLiteConnection conexion = null;
+            SQLiteCommand comando = null;
+            SQLiteDataReader lector = null;
 
             try
             {
-                connection = new MySqlConnection(connectionString);
-                connection.Open();
-                cmd = new MySqlCommand(query, connection);
-                cmd.Parameters.AddWithValue("@termino", parametroValor);
-                reader = cmd.ExecuteReader();
+                conexion = new SQLiteConnection(cadenaConexion);
+                conexion.Open();
+                comando = new SQLiteCommand(consulta, conexion);
+                comando.Parameters.AddWithValue("@termino", valorParametro);
+                lector = comando.ExecuteReader();
 
-                while (reader.Read())
+                while (lector.Read())
                 {
-                    ListViewItem item = new ListViewItem(reader["nombre"].ToString());
-                    item.SubItems.Add(reader["autor"].ToString());
-                    item.SubItems.Add(reader["precio"].ToString());
-                    item.SubItems.Add(reader["stock"].ToString());
+                    ListViewItem elemento = new ListViewItem(lector["nombre"].ToString());
+                    elemento.SubItems.Add(lector["autor"].ToString());
+                    elemento.SubItems.Add(lector["precio"].ToString());
+                    elemento.SubItems.Add(lector["stock"].ToString());
 
-                    item.Tag = reader.GetInt32("id");
+                    elemento.Tag = Convert.ToInt32(lector["id"]);
 
-                    LvRegistros.Items.Add(item);
+                    LvRegistros.Items.Add(elemento);
                     totalRegistros++;
                 }
                 LblCuenta.Text = "TOTAL DE REGISTROS: " + totalRegistros;
@@ -96,16 +96,16 @@ namespace Prototipo2
             }
             finally
             {
-                if (reader != null)
+                if (lector != null)
                 {
-                    reader.Close();
-                    reader.Dispose();
+                    lector.Close();
+                    lector.Dispose();
                 }
-                if (cmd != null) cmd.Dispose();
-                if (connection != null)
+                if (comando != null) comando.Dispose();
+                if (conexion != null)
                 {
-                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
-                    connection.Dispose();
+                    if (conexion.State == System.Data.ConnectionState.Open) conexion.Close();
+                    conexion.Dispose();
                 }
             }
         }
@@ -118,33 +118,33 @@ namespace Prototipo2
                 return;
             }
 
-            ListViewItem itemSeleccionado = LvRegistros.SelectedItems[0];
-            string nombreLibro = itemSeleccionado.SubItems[0].Text;
-            int idParaEliminar = (int)itemSeleccionado.Tag;
+            ListViewItem elementoSeleccionado = LvRegistros.SelectedItems[0];
+            string nombreLibro = elementoSeleccionado.SubItems[0].Text;
+            int idParaEliminar = (int)elementoSeleccionado.Tag;
 
-            DialogResult confrimación = MessageBox.Show($"¿Estás seguro de que quieres eliminar permanentemente el libro:\n\n'{nombreLibro}'?","Confirmar Eliminación",MessageBoxButtons.YesNo,MessageBoxIcon.Warning);
+            DialogResult confirmacion = MessageBox.Show($"¿Estás seguro de que quieres eliminar permanentemente el libro:\n\n'{nombreLibro}'?","Confirmar Eliminación",MessageBoxButtons.YesNo,MessageBoxIcon.Warning);
 
-            if (confrimación != DialogResult.Yes) return;
+            if (confirmacion != DialogResult.Yes) return;
 
-            string connectionString = GetConnStr();
-            MySqlConnection connection = null;
-            MySqlCommand cmd = null;
+            string cadenaConexion = GetConnStr();
+            SQLiteConnection conexion = null;
+            SQLiteCommand comando = null;
 
             try
             {
-                connection = new MySqlConnection(connectionString);
-                connection.Open();
+                conexion = new SQLiteConnection(cadenaConexion);
+                conexion.Open();
 
-                string query = "DELETE FROM libros WHERE id = @id";
-                cmd = new MySqlCommand(query, connection);
-                cmd.Parameters.AddWithValue("@id", idParaEliminar);
+                string consulta = "DELETE FROM libros WHERE id = @id";
+                comando = new SQLiteCommand(consulta, conexion);
+                comando.Parameters.AddWithValue("@id", idParaEliminar);
 
-                int filasAfectadas = cmd.ExecuteNonQuery();
+                int filasAfectadas = comando.ExecuteNonQuery();
 
                 if (filasAfectadas > 0)
                 {
                     MessageBox.Show("Libro eliminado con éxito.");
-                    LvRegistros.Items.Remove(itemSeleccionado);
+                    LvRegistros.Items.Remove(elementoSeleccionado);
                     LblCuenta.Text = "TOTAL DE REGISTROS: " + LvRegistros.Items.Count;
                 }
                 else
@@ -152,29 +152,17 @@ namespace Prototipo2
                     MessageBox.Show("Error: No se pudo eliminar el libro (no se encontró).");
                 }
             }
-            catch (MySqlException ex)
-            {
-                if (ex.Number == 1451)
-                {
-                    MessageBox.Show("No se puede eliminar este libro porque está asociado a una o más ventas registradas.",
-                        "Error de Eliminación", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                else
-                {
-                    MessageBox.Show("Error de base de datos: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
             catch (Exception ex)
             {
-                MessageBox.Show("Error inesperado: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error de base de datos: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
-                if (cmd != null) cmd.Dispose();
-                if (connection != null)
+                if (comando != null) comando.Dispose();
+                if (conexion != null)
                 {
-                    if (connection.State == System.Data.ConnectionState.Open) connection.Close();
-                    connection.Dispose();
+                    if (conexion.State == System.Data.ConnectionState.Open) conexion.Close();
+                    conexion.Dispose();
                 }
             }
 
@@ -183,6 +171,11 @@ namespace Prototipo2
         private void BtnSalir_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void LvRegistros_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

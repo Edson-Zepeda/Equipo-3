@@ -7,7 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
+using System.Configuration;
+using System.Data.SQLite;
 
 namespace Prototipo2
 {
@@ -19,6 +20,12 @@ namespace Prototipo2
         {
             InitializeComponent();
             this.idUsuarioLogueado = idUsuario;
+        }
+
+        private static string GetConnStr()
+        {
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
+            return cs != null ? cs.ConnectionString : "Data Source=prototipo2.db;Version=3;";
         }
 
         private void VentanaVentas_Load(object sender, EventArgs e)
@@ -69,14 +76,12 @@ namespace Prototipo2
 
             if (RdbExacta.Checked)
             {
-                query = "SELECT id, nombre, autor, precio, fecha_publicacion, stock FROM libros " +
-                        "WHERE nombre = @termino OR autor = @termino";
+                query = "SELECT id, nombre, autor, precio, fecha_publicacion, stock FROM libros WHERE nombre = @termino OR autor = @termino";
                 parametroValor = termino;
             }
             else if (RdbAproximada.Checked)
             {
-                query = "SELECT id, nombre, autor, precio, fecha_publicacion, stock FROM libros " +
-                        "WHERE nombre LIKE @termino OR autor LIKE @termino";
+                query = "SELECT id, nombre, autor, precio, fecha_publicacion, stock FROM libros WHERE nombre LIKE @termino OR autor LIKE @termino";
                 parametroValor = "%" + termino + "%";
             }
             else
@@ -86,27 +91,28 @@ namespace Prototipo2
             }
 
             LvRegistros.Items.Clear();
-            string connectionString = "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
+            string connectionString = GetConnStr();
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                using (var connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
-                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    using (var cmd = new SQLiteCommand(query, connection))
                     {
                         cmd.Parameters.AddWithValue("@termino", parametroValor);
-                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        using (var reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
                             {
                                 ListViewItem item = new ListViewItem(reader["nombre"].ToString());
                                 item.SubItems.Add(reader["autor"].ToString());
                                 item.SubItems.Add(reader["precio"].ToString());
-                                DateTime fecha = reader.GetDateTime("fecha_publicacion");
+                                DateTime fecha = DateTime.Now;
+                                try { fecha = Convert.ToDateTime(reader["fecha_publicacion"]); } catch { }
                                 item.SubItems.Add(fecha.ToString("yyyy-MM-dd"));
                                 item.SubItems.Add(reader["stock"].ToString());
-                                item.Tag = reader.GetInt32("id");
+                                item.Tag = Convert.ToInt32(reader["id"]);
 
                                 LvRegistros.Items.Add(item);
                             }
@@ -139,7 +145,8 @@ namespace Prototipo2
             string nombre = itemSeleccionado.SubItems[0].Text;
             string autor = itemSeleccionado.SubItems[1].Text;
             decimal precio = decimal.Parse(itemSeleccionado.SubItems[2].Text);
-            int stock = int.Parse(itemSeleccionado.SubItems[4].Text);
+            int stock = 0;
+            int.TryParse(itemSeleccionado.SubItems[4].Text, out stock);
 
             if (cantidadComprar > stock)
             {
@@ -165,89 +172,88 @@ namespace Prototipo2
 
         private void BtnComprar_Click(object sender, EventArgs e)
         {
-            if(LvCarrito.Items.Count == 0)
+            if (LvCarrito.Items.Count == 0)
             {
                 MessageBox.Show("El carrito está vacío");
                 return;
             }
 
-            DialogResult confirmacion = MessageBox.Show("¿Deseas finalizar la compra?","Confirmación",MessageBoxButtons.YesNo,MessageBoxIcon.Question);
+            DialogResult confirmacion = MessageBox.Show("¿Deseas finalizar la compra?", "Confirmación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
-            if(confirmacion == DialogResult.No)
+            if (confirmacion == DialogResult.No)
             {
                 return;
             }
 
-            string connectionString = "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
-            MySqlConnection connection = new MySqlConnection(connectionString);
-            MySqlTransaction transaccion = null;
+            string connectionString = GetConnStr();
 
             try
             {
-                connection.Open();
-                transaccion = connection.BeginTransaction();
-
-                decimal totalpagar = 0;
-
-                foreach (ListViewItem item in LvCarrito.Items)
+                using (var connection = new SQLiteConnection(connectionString))
                 {
-                    totalpagar += decimal.Parse(item.SubItems[4].Text);
+                    connection.Open();
+                    using (var trans = connection.BeginTransaction())
+                    {
+                        decimal totalpagar = 0;
+
+                        foreach (ListViewItem item in LvCarrito.Items)
+                        {
+                            totalpagar += decimal.Parse(item.SubItems[4].Text);
+                        }
+
+                        string queryVenta = "INSERT INTO ventas (fecha, id_usuario, total_venta) VALUES (@fecha, @id_usuario, @total)";
+                        using (var cmdVenta = new SQLiteCommand(queryVenta, connection, trans))
+                        {
+                            cmdVenta.Parameters.AddWithValue("@fecha", DateTime.Now);
+                            cmdVenta.Parameters.AddWithValue("@id_usuario", this.idUsuarioLogueado);
+                            cmdVenta.Parameters.AddWithValue("@total", totalpagar);
+                            cmdVenta.ExecuteNonQuery();
+                        }
+
+                        long idVentaNueva = 0;
+                        using (var cmdLast = new SQLiteCommand("SELECT last_insert_rowid()", connection, trans))
+                        {
+                            idVentaNueva = (long)cmdLast.ExecuteScalar();
+                        }
+
+                        foreach (ListViewItem item in LvCarrito.Items)
+                        {
+                            int idLibro = Convert.ToInt32(item.Tag);
+                            int cantidad = int.Parse(item.SubItems[3].Text);
+                            decimal precioVenta = decimal.Parse(item.SubItems[2].Text);
+                            decimal subtotal = decimal.Parse(item.SubItems[4].Text);
+
+                            string queryDetalle = "INSERT INTO detalle_ventas (id_venta, id_libro, cantidad, precio_unitario_venta, subtotal) VALUES (@id_venta, @id_libro, @cantidad, @precio, @subtotal)";
+                            using (var cmdDetalle = new SQLiteCommand(queryDetalle, connection, trans))
+                            {
+                                cmdDetalle.Parameters.AddWithValue("@id_venta", idVentaNueva);
+                                cmdDetalle.Parameters.AddWithValue("@id_libro", idLibro);
+                                cmdDetalle.Parameters.AddWithValue("@cantidad", cantidad);
+                                cmdDetalle.Parameters.AddWithValue("@precio", precioVenta);
+                                cmdDetalle.Parameters.AddWithValue("@subtotal", subtotal);
+                                cmdDetalle.ExecuteNonQuery();
+                            }
+
+                            string queryStock = "UPDATE libros SET stock = stock - @cantidad WHERE id = @id_libro";
+                            using (var cmdStock = new SQLiteCommand(queryStock, connection, trans))
+                            {
+                                cmdStock.Parameters.AddWithValue("@cantidad", cantidad);
+                                cmdStock.Parameters.AddWithValue("@id_libro", idLibro);
+                                cmdStock.ExecuteNonQuery();
+                            }
+                        }
+
+                        trans.Commit();
+
+                        MessageBox.Show($"Venta registrada con éxito (Ticket #{idVentaNueva})\nTotal a pagar: {totalpagar:C}", "Venta Finalizada", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        LvCarrito.Items.Clear();
+                    }
                 }
-
-                string queryVenta = "INSERT INTO ventas (fecha, id_usuario, total_venta) VALUES (@fecha, @id_usuario, @total)";
-                MySqlCommand cmdVenta = new MySqlCommand(queryVenta, connection, transaccion);
-                cmdVenta.Parameters.AddWithValue("@fecha", DateTime.Now);
-                cmdVenta.Parameters.AddWithValue("@id_usuario", this.idUsuarioLogueado);
-                cmdVenta.Parameters.AddWithValue("@total", totalpagar);
-                cmdVenta.ExecuteNonQuery();
-
-                long idVentaNueva = cmdVenta.LastInsertedId;
-
-                foreach (ListViewItem item in LvCarrito.Items)
-                {
-                    int idLibro = (int)item.Tag;
-                    int cantidad = int.Parse(item.SubItems[3].Text);
-                    decimal precioVenta = decimal.Parse(item.SubItems[2].Text);
-                    decimal subtotal = decimal.Parse(item.SubItems[4].Text);
-
-                    string queryDetalle = "INSERT INTO detalle_ventas (id_venta, id_libro, cantidad, precio_unitario_venta, subtotal) " + "VALUES (@id_venta, @id_libro, @cantidad, @precio, @subtotal)";
-                    MySqlCommand cmdDetalle = new MySqlCommand(queryDetalle, connection, transaccion);
-                    cmdDetalle.Parameters.AddWithValue("@id_venta", idVentaNueva);
-                    cmdDetalle.Parameters.AddWithValue("@id_libro", idLibro);
-                    cmdDetalle.Parameters.AddWithValue("@cantidad", cantidad);
-                    cmdDetalle.Parameters.AddWithValue("@precio", precioVenta);
-                    cmdDetalle.Parameters.AddWithValue("@subtotal", subtotal);
-                    cmdDetalle.ExecuteNonQuery();
-
-                    string queryStock = "UPDATE libros SET stock = stock - @cantidad WHERE id = @id_libro";
-                    MySqlCommand cmdStock = new MySqlCommand(queryStock, connection, transaccion);
-                    cmdStock.Parameters.AddWithValue("@cantidad", cantidad);
-                    cmdStock.Parameters.AddWithValue("@id_libro", idLibro);
-                    cmdStock.ExecuteNonQuery();
-                }
-
-                transaccion.Commit();
-
-                MessageBox.Show($"Venta registrada con éxito (Ticket #{idVentaNueva})\nTotal a pagar: {totalpagar:C}","Venta Finalizada", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                LvCarrito.Items.Clear();
             }
             catch (Exception ex)
             {
-                try
-                {
-                    transaccion?.Rollback();
-                }
-                catch { }
-
-                MessageBox.Show("Error crítico al registrar la venta. La operación ha sido cancelada.\n\nError: " + ex.Message,"Error de Venta", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                if(connection.State == System.Data.ConnectionState.Open)
-                {
-                    connection.Close();
-                }
+                MessageBox.Show("Error crítico al registrar la venta. La operación ha sido cancelada.\n\nError: " + ex.Message, "Error de Venta", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

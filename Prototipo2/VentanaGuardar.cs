@@ -7,8 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
 using System.Globalization;
+using System.Configuration;
+using System.Data.SQLite;
 
 namespace Prototipo2
 {
@@ -22,6 +23,12 @@ namespace Prototipo2
         private void VentanaGuardar_Load(object sender, EventArgs e)
         {
 
+        }
+
+        private static string GetConnStr()
+        {
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
+            return cs != null ? cs.ConnectionString : "Data Source=prototipo2.db;Version=3;";
         }
 
         private void BtnGuardar_Click(object sender, EventArgs e)
@@ -51,26 +58,25 @@ namespace Prototipo2
                 return;
             }
 
-            string connectionString = "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
+            string cadenaConexion = GetConnStr();
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                using (SQLiteConnection conexion = new SQLiteConnection(cadenaConexion))
                 {
-                    connection.Open();
+                    conexion.Open();
 
-                    string query = "INSERT INTO libros (nombre, autor, precio, fecha_publicacion, stock) " + "VALUES (@nombre, @autor, @precio, @fecha, @stock)";
+                    string consulta = "INSERT INTO libros (nombre, autor, precio, fecha_publicacion, stock) VALUES (@nombre, @autor, @precio, @fecha, @stock)";
 
-                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    using (SQLiteCommand comando = new SQLiteCommand(consulta, conexion))
                     {
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-                        cmd.Parameters.AddWithValue("@autor", autor);
-                        cmd.Parameters.AddWithValue("@precio", precio);
-                        cmd.Parameters.AddWithValue("@fecha", fecha);
-                        cmd.Parameters.AddWithValue("@stock", stock);
+                        comando.Parameters.AddWithValue("@nombre", nombre);
+                        comando.Parameters.AddWithValue("@autor", autor);
+                        comando.Parameters.AddWithValue("@precio", precio);
+                        comando.Parameters.AddWithValue("@fecha", fecha);
+                        comando.Parameters.AddWithValue("@stock", stock);
 
-                        // 6. Ejecutar
-                        int filasAfectadas = cmd.ExecuteNonQuery();
+                        int filasAfectadas = comando.ExecuteNonQuery();
 
                         if (filasAfectadas > 0)
                         {
@@ -84,23 +90,10 @@ namespace Prototipo2
                     }
                 }
             }
-            catch (MySqlException ex)
-            {
-                // Capturar error común: entrada duplicada
-                if (ex.Number == 1062)
-                {
-                    MessageBox.Show("Error: Ya existe un libro con ese nombre.", "Error de Duplicado", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                else
-                {
-                    MessageBox.Show("Error de base de datos: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
             catch (Exception ex)
             {
-                MessageBox.Show("Error inesperado: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error de base de datos: " + ex.Message);
             }
-
         }
 
         private void LimpiarCampos()

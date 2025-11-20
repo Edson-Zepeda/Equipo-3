@@ -7,21 +7,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
+using System.Configuration;
+using System.Data.SQLite;
 
 namespace Prototipo2
 {
-    
     public partial class VentanaCorte : Form
     {
         private int idUsuarioLogueado;
         private string nombreUsuarioLogueado = "Desconocido";
         private decimal totalDia = 0;
-
+        // Constructor le da un valor a la variable idUsuarioLogueado al crear la instancia o formulario
         public VentanaCorte(int idUsuario)
         {
             InitializeComponent();
-            this.idUsuarioLogueado=idUsuario;
+            this.idUsuarioLogueado = idUsuario;
+        }
+
+        private static string GetConnStr()
+        {
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
+            return cs != null ? cs.ConnectionString : "Data Source=prototipo2.db;Version=3;";
         }
 
         private void VentanaCorte_Load(object sender, EventArgs e)
@@ -42,44 +48,68 @@ namespace Prototipo2
 
         private void CargarDatosDelCorte()
         {
-            string connectionString = "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            string connectionString = GetConnStr();
+
+            try
             {
-                try
+                using (var connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
 
-                    string queryNombre = "SELECT Usuario FROM usuarios WHERE ID = @idUsuario";
-                    MySqlCommand cmdNombre = new MySqlCommand(queryNombre, connection);
-                    cmdNombre.Parameters.AddWithValue("@idUsuario", this.idUsuarioLogueado);
-                    object resultadoNombre = cmdNombre.ExecuteScalar();
-                    if (resultadoNombre != null)
+                    try
                     {
-                        this.nombreUsuarioLogueado = resultadoNombre.ToString();
-                    }
-
-                    string queryVentas = "SELECT id_venta, fecha, total_venta FROM ventas " + "WHERE id_usuario = @idUsuario AND DATE(fecha) = CURDATE() " + "ORDER BY fecha DESC";
-
-                    MySqlCommand cmdVentas = new MySqlCommand(queryVentas, connection);
-                    cmdVentas.Parameters.AddWithValue("@idUsuario", this.idUsuarioLogueado);
-
-                    using (MySqlDataReader reader = cmdVentas.ExecuteReader())
-                    {
-                        while (reader.Read())
+                        using (var cmdNombre = new SQLiteCommand("SELECT Usuario FROM usuarios WHERE id = @idUsuario", connection))
                         {
-                            ListViewItem item = new ListViewItem(reader.GetInt32("id_venta").ToString());
-                            item.SubItems.Add(reader.GetDateTime("fecha").ToString("yyyy-MM-dd HH:mm:ss"));
-                            item.SubItems.Add(reader.GetDecimal("total_venta").ToString("C"));
-                            LvCorte.Items.Add(item);
-
-                            this.totalDia += reader.GetDecimal("total_venta");
+                            cmdNombre.Parameters.AddWithValue("@idUsuario", this.idUsuarioLogueado);
+                            object resultadoNombre = cmdNombre.ExecuteScalar();
+                            if (resultadoNombre != null && resultadoNombre != DBNull.Value)
+                            {
+                                this.nombreUsuarioLogueado = resultadoNombre.ToString();
+                            }
                         }
                     }
+                    catch (SQLiteException)
+                    {
+                        // tabla usuarios puede no existir, entonces nada mas lo ignoramos
+                    }
+                    try
+                    {
+                        string queryVentas = "SELECT id_venta, fecha, total_venta FROM ventas WHERE id_usuario = @idUsuario AND DATE(fecha) = DATE('now') ORDER BY fecha DESC";
+                        using (var cmdVentas = new SQLiteCommand(queryVentas, connection))
+                        {
+                            cmdVentas.Parameters.AddWithValue("@idUsuario", this.idUsuarioLogueado);
+                            using (var reader = cmdVentas.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    int idVenta = 0;
+                                    decimal total = 0;
+                                    DateTime fecha = DateTime.Now;
+
+                                    try { idVenta = Convert.ToInt32(reader["id_venta"]); } catch { }
+                                    try { fecha = Convert.ToDateTime(reader["fecha"]); } catch { }
+                                    try { total = Convert.ToDecimal(reader["total_venta"]); } catch { }
+
+                                    ListViewItem item = new ListViewItem(idVenta.ToString());
+                                    item.SubItems.Add(fecha.ToString("yyyy-MM-dd HH:mm:ss"));
+                                    item.SubItems.Add(total.ToString("C"));
+                                    LvCorte.Items.Add(item);
+
+                                    this.totalDia += total;
+                                }
+                            }
+                        }
+                    }
+                    catch (SQLiteException)
+                    {
+                        // tabla ventas puede no existir, entonces nada mas lo ignoramos
+                    }
                 }
-                catch(Exception ex)
-                {
-                    MessageBox.Show("Error al cargar los datos del corte: " + ex.Message);
-                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar los datos del corte: " + ex.Message);
             }
         }
 
@@ -99,6 +129,9 @@ namespace Prototipo2
             this.Close();
         }
 
-        
+        private void LvCorte_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

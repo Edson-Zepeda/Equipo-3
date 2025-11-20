@@ -48,10 +48,10 @@
             // 
             // BtnEliminar
             // 
-            this.BtnEliminar.Location = new System.Drawing.Point(12, 249);
-            this.BtnEliminar.Margin = new System.Windows.Forms.Padding(2);
+            this.BtnEliminar.Location = new System.Drawing.Point(16, 306);
+            this.BtnEliminar.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.BtnEliminar.Name = "BtnEliminar";
-            this.BtnEliminar.Size = new System.Drawing.Size(70, 27);
+            this.BtnEliminar.Size = new System.Drawing.Size(93, 33);
             this.BtnEliminar.TabIndex = 72;
             this.BtnEliminar.Text = "ELIMINAR";
             this.BtnEliminar.UseVisualStyleBackColor = true;
@@ -59,46 +59,44 @@
             // 
             // TxtClave
             // 
-            this.TxtClave.Location = new System.Drawing.Point(135, 169);
-            this.TxtClave.Margin = new System.Windows.Forms.Padding(2);
+            this.TxtClave.Location = new System.Drawing.Point(180, 208);
+            this.TxtClave.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.TxtClave.Name = "TxtClave";
-            this.TxtClave.Size = new System.Drawing.Size(88, 20);
+            this.TxtClave.Size = new System.Drawing.Size(116, 22);
             this.TxtClave.TabIndex = 71;
             // 
             // TxtUsuario
             // 
-            this.TxtUsuario.Location = new System.Drawing.Point(135, 132);
-            this.TxtUsuario.Margin = new System.Windows.Forms.Padding(2);
+            this.TxtUsuario.Location = new System.Drawing.Point(180, 162);
+            this.TxtUsuario.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.TxtUsuario.Name = "TxtUsuario";
-            this.TxtUsuario.Size = new System.Drawing.Size(88, 20);
+            this.TxtUsuario.Size = new System.Drawing.Size(116, 22);
             this.TxtUsuario.TabIndex = 70;
             // 
             // LblClave
             // 
             this.LblClave.AutoSize = true;
-            this.LblClave.Location = new System.Drawing.Point(88, 169);
-            this.LblClave.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.LblClave.Location = new System.Drawing.Point(117, 208);
             this.LblClave.Name = "LblClave";
-            this.LblClave.Size = new System.Drawing.Size(41, 13);
+            this.LblClave.Size = new System.Drawing.Size(50, 16);
             this.LblClave.TabIndex = 68;
             this.LblClave.Text = "CLAVE";
             // 
             // LblUsuario
             // 
             this.LblUsuario.AutoSize = true;
-            this.LblUsuario.Location = new System.Drawing.Point(73, 132);
-            this.LblUsuario.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.LblUsuario.Location = new System.Drawing.Point(97, 162);
             this.LblUsuario.Name = "LblUsuario";
-            this.LblUsuario.Size = new System.Drawing.Size(56, 13);
+            this.LblUsuario.Size = new System.Drawing.Size(68, 16);
             this.LblUsuario.TabIndex = 67;
             this.LblUsuario.Text = "USUARIO";
             // 
             // BtnModificar
             // 
-            this.BtnModificar.Location = new System.Drawing.Point(162, 249);
-            this.BtnModificar.Margin = new System.Windows.Forms.Padding(2);
+            this.BtnModificar.Location = new System.Drawing.Point(216, 306);
+            this.BtnModificar.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.BtnModificar.Name = "BtnModificar";
-            this.BtnModificar.Size = new System.Drawing.Size(70, 27);
+            this.BtnModificar.Size = new System.Drawing.Size(93, 33);
             this.BtnModificar.TabIndex = 65;
             this.BtnModificar.Text = "MODIFICAR";
             this.BtnModificar.UseVisualStyleBackColor = true;
@@ -106,10 +104,10 @@
             // 
             // BtnCancelar
             // 
-            this.BtnCancelar.Location = new System.Drawing.Point(67, 280);
-            this.BtnCancelar.Margin = new System.Windows.Forms.Padding(2);
+            this.BtnCancelar.Location = new System.Drawing.Point(89, 345);
+            this.BtnCancelar.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.BtnCancelar.Name = "BtnCancelar";
-            this.BtnCancelar.Size = new System.Drawing.Size(106, 36);
+            this.BtnCancelar.Size = new System.Drawing.Size(141, 44);
             this.BtnCancelar.TabIndex = 64;
             this.BtnCancelar.Text = "CANCELAR";
             this.BtnCancelar.UseVisualStyleBackColor = true;
@@ -117,10 +115,10 @@
             // 
             // BtnGrabar
             // 
-            this.BtnGrabar.Location = new System.Drawing.Point(87, 249);
-            this.BtnGrabar.Margin = new System.Windows.Forms.Padding(2);
+            this.BtnGrabar.Location = new System.Drawing.Point(116, 306);
+            this.BtnGrabar.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.BtnGrabar.Name = "BtnGrabar";
-            this.BtnGrabar.Size = new System.Drawing.Size(70, 27);
+            this.BtnGrabar.Size = new System.Drawing.Size(93, 33);
             this.BtnGrabar.TabIndex = 63;
             this.BtnGrabar.Text = "GRABAR";
             this.BtnGrabar.UseVisualStyleBackColor = true;
@@ -128,10 +126,10 @@
             // 
             // BtnSalir
             // 
-            this.BtnSalir.Location = new System.Drawing.Point(611, 333);
-            this.BtnSalir.Margin = new System.Windows.Forms.Padding(2);
+            this.BtnSalir.Location = new System.Drawing.Point(815, 410);
+            this.BtnSalir.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.BtnSalir.Name = "BtnSalir";
-            this.BtnSalir.Size = new System.Drawing.Size(52, 23);
+            this.BtnSalir.Size = new System.Drawing.Size(69, 28);
             this.BtnSalir.TabIndex = 62;
             this.BtnSalir.Text = "SALIR";
             this.BtnSalir.UseVisualStyleBackColor = true;
@@ -140,39 +138,38 @@
             // LblCuenta
             // 
             this.LblCuenta.AutoSize = true;
-            this.LblCuenta.Location = new System.Drawing.Point(525, 278);
-            this.LblCuenta.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.LblCuenta.Location = new System.Drawing.Point(700, 342);
             this.LblCuenta.Name = "LblCuenta";
-            this.LblCuenta.Size = new System.Drawing.Size(138, 13);
+            this.LblCuenta.Size = new System.Drawing.Size(168, 16);
             this.LblCuenta.TabIndex = 61;
             this.LblCuenta.Text = "TOTAL DE REGISTROS: 0";
             // 
             // LvRegistros
             // 
             this.LvRegistros.HideSelection = false;
-            this.LvRegistros.Location = new System.Drawing.Point(237, 93);
-            this.LvRegistros.Margin = new System.Windows.Forms.Padding(2);
+            this.LvRegistros.Location = new System.Drawing.Point(316, 114);
+            this.LvRegistros.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.LvRegistros.Name = "LvRegistros";
-            this.LvRegistros.Size = new System.Drawing.Size(415, 183);
+            this.LvRegistros.Size = new System.Drawing.Size(552, 224);
             this.LvRegistros.TabIndex = 60;
             this.LvRegistros.UseCompatibleStateImageBehavior = false;
             this.LvRegistros.SelectedIndexChanged += new System.EventHandler(this.LvRegistros_SelectedIndexChanged);
             // 
             // TxtBuscar
             // 
-            this.TxtBuscar.Location = new System.Drawing.Point(237, 50);
-            this.TxtBuscar.Margin = new System.Windows.Forms.Padding(2);
+            this.TxtBuscar.Location = new System.Drawing.Point(316, 62);
+            this.TxtBuscar.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.TxtBuscar.Name = "TxtBuscar";
-            this.TxtBuscar.Size = new System.Drawing.Size(298, 20);
+            this.TxtBuscar.Size = new System.Drawing.Size(396, 22);
             this.TxtBuscar.TabIndex = 58;
             // 
             // RdbAproximada
             // 
             this.RdbAproximada.AutoSize = true;
-            this.RdbAproximada.Location = new System.Drawing.Point(386, 11);
-            this.RdbAproximada.Margin = new System.Windows.Forms.Padding(2);
+            this.RdbAproximada.Location = new System.Drawing.Point(515, 14);
+            this.RdbAproximada.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.RdbAproximada.Name = "RdbAproximada";
-            this.RdbAproximada.Size = new System.Drawing.Size(159, 17);
+            this.RdbAproximada.Size = new System.Drawing.Size(195, 20);
             this.RdbAproximada.TabIndex = 57;
             this.RdbAproximada.TabStop = true;
             this.RdbAproximada.Text = "BUSQUEDA APROXIMADA";
@@ -181,10 +178,10 @@
             // RdbExacta
             // 
             this.RdbExacta.AutoSize = true;
-            this.RdbExacta.Location = new System.Drawing.Point(237, 12);
-            this.RdbExacta.Margin = new System.Windows.Forms.Padding(2);
+            this.RdbExacta.Location = new System.Drawing.Point(316, 15);
+            this.RdbExacta.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.RdbExacta.Name = "RdbExacta";
-            this.RdbExacta.Size = new System.Drawing.Size(130, 17);
+            this.RdbExacta.Size = new System.Drawing.Size(160, 20);
             this.RdbExacta.TabIndex = 56;
             this.RdbExacta.TabStop = true;
             this.RdbExacta.Text = "BUSQUEDA EXACTA";
@@ -193,19 +190,21 @@
             // ChkAdmin
             // 
             this.ChkAdmin.AutoSize = true;
-            this.ChkAdmin.Location = new System.Drawing.Point(135, 201);
+            this.ChkAdmin.Location = new System.Drawing.Point(180, 247);
+            this.ChkAdmin.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.ChkAdmin.Name = "ChkAdmin";
-            this.ChkAdmin.Size = new System.Drawing.Size(89, 17);
+            this.ChkAdmin.Size = new System.Drawing.Size(112, 20);
             this.ChkAdmin.TabIndex = 73;
             this.ChkAdmin.Text = "Administrador";
             this.ChkAdmin.UseVisualStyleBackColor = true;
+            this.ChkAdmin.CheckedChanged += new System.EventHandler(this.ChkAdmin_CheckedChanged);
             // 
             // BtnBuscar
             // 
-            this.BtnBuscar.Location = new System.Drawing.Point(539, 50);
-            this.BtnBuscar.Margin = new System.Windows.Forms.Padding(2);
+            this.BtnBuscar.Location = new System.Drawing.Point(719, 62);
+            this.BtnBuscar.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.BtnBuscar.Name = "BtnBuscar";
-            this.BtnBuscar.Size = new System.Drawing.Size(86, 24);
+            this.BtnBuscar.Size = new System.Drawing.Size(115, 30);
             this.BtnBuscar.TabIndex = 74;
             this.BtnBuscar.Text = "BUSCAR";
             this.BtnBuscar.UseVisualStyleBackColor = true;
@@ -213,9 +212,9 @@
             // 
             // VentanaUsuarios
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(679, 366);
+            this.ClientSize = new System.Drawing.Size(905, 450);
             this.Controls.Add(this.BtnBuscar);
             this.Controls.Add(this.ChkAdmin);
             this.Controls.Add(this.BtnEliminar);
@@ -233,7 +232,7 @@
             this.Controls.Add(this.RdbAproximada);
             this.Controls.Add(this.RdbExacta);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.MaximizeBox = false;
             this.Name = "VentanaUsuarios";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

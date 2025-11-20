@@ -7,8 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
 using System.Globalization;
+using System.Configuration;
+using System.Data.SQLite;
 
 namespace Prototipo2
 {
@@ -65,6 +66,12 @@ namespace Prototipo2
             this.idModificar = 0;
         }
 
+        private static string GetConnStr()
+        {
+            var cs = ConfigurationManager.ConnectionStrings["Prototipo2"];
+            return cs != null ? cs.ConnectionString : "Data Source=prototipo2.db;Version=3;";
+        }
+
         private void BtnBuscar_Click(object sender, EventArgs e)
         {
             string termino = TxtBuscar.Text.Trim();
@@ -92,27 +99,34 @@ namespace Prototipo2
 
             LvRegistros.Items.Clear();
             int totalRegistros = 0;
-            string connectionString = "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
+            string connectionString = GetConnStr();
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
-                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, connection))
                     {
                         cmd.Parameters.AddWithValue("@termino", parametroValor);
-                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        using (SQLiteDataReader reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
                             {
                                 ListViewItem item = new ListViewItem(reader["nombre"].ToString());
                                 item.SubItems.Add(reader["autor"].ToString());
                                 item.SubItems.Add(reader["precio"].ToString());
-                                item.SubItems.Add(reader.GetDateTime("fecha_publicacion").ToString("yyyy-MM-dd"));
+
+                                object fechaObj = reader["fecha_publicacion"];
+                                string fechaStr = "";
+                                if (fechaObj != null && fechaObj != DBNull.Value)
+                                {
+                                    try { fechaStr = Convert.ToDateTime(fechaObj).ToString("yyyy-MM-dd"); } catch { fechaStr = fechaObj.ToString(); }
+                                }
+                                item.SubItems.Add(fechaStr);
                                 item.SubItems.Add(reader["stock"].ToString());
 
-                                item.Tag = reader.GetInt32("id");
+                                item.Tag = Convert.ToInt32(reader["id"]);
 
                                 LvRegistros.Items.Add(item);
                                 totalRegistros++;
@@ -139,7 +153,8 @@ namespace Prototipo2
             TxtNombre.Text = itemSeleccionado.SubItems[0].Text;
             TxtAutor.Text = itemSeleccionado.SubItems[1].Text;
             TxtPrecio.Text = itemSeleccionado.SubItems[2].Text;
-            DtpFecha.Value = DateTime.ParseExact(itemSeleccionado.SubItems[3].Text, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            if (!string.IsNullOrEmpty(itemSeleccionado.SubItems[3].Text))
+                DtpFecha.Value = DateTime.ParseExact(itemSeleccionado.SubItems[3].Text, "yyyy-MM-dd", CultureInfo.InvariantCulture);
             TxtStock.Text = itemSeleccionado.SubItems[4].Text;
 
             ConfigurarEstado(true);
@@ -174,15 +189,15 @@ namespace Prototipo2
                 return;
             }
 
-            string connectionString = "server=127.0.0.1;database=prototipo2_db;uid=root;pwd=;";
+            string connectionString = GetConnStr();
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
-                    string query = "UPDATE libros SET nombre = @nombre, autor = @autor, precio = @precio, " + "fecha_publicacion = @fecha, stock = @stock WHERE id = @id";
+                    string query = "UPDATE libros SET nombre = @nombre, autor = @autor, precio = @precio, fecha_publicacion = @fecha, stock = @stock WHERE id = @id";
 
-                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, connection))
                     {
                         cmd.Parameters.AddWithValue("@nombre", nombre);
                         cmd.Parameters.AddWithValue("@autor", autor);

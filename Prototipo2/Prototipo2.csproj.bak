@@ -124,8 +124,8 @@
     <Compile Include="VentanaPrestamos.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="VentanaPrestamos.Designer.cs">
-      <DependentUpon>VentanaPrestamos.cs</DependentUpon>
+    <Compile Include="VentanaSocios.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="VentanaVentas.cs">
       <SubType>Form</SubType>
@@ -174,9 +174,6 @@
     <EmbeddedResource Include="VentanaBuscar.resx">
       <DependentUpon>VentanaBuscar.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="VentanaPrestamos.resx">
-      <DependentUpon>VentanaPrestamos.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="VentanaVentas.resx">
       <DependentUpon>VentanaVentas.cs</DependentUpon>
     </EmbeddedResource>
@@ -204,6 +201,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="docker-compose.yml" />
+    <None Include="Logging\NLog.config" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -218,6 +218,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="sql\schema.sql" />
     <Content Include="sql\schema_sqlite.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
