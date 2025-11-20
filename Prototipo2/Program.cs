@@ -19,6 +19,7 @@ namespace Prototipo2
            
             VentanaInicio loginForm = new VentanaInicio();
 
+
             
             if (loginForm.ShowDialog() == DialogResult.OK)
             {
