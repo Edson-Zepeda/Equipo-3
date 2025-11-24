@@ -279,6 +279,7 @@ namespace Prototipo2
         private void BtnCerrar_Click(object sender, EventArgs e)
         {
             Close();
+
         }
     }
 }
